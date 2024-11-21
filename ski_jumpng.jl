@@ -8,6 +8,21 @@ include("functions.jl")
 using DifferentialEquations
 using GLMakie
 
+fig = Figure(resolution = (1920, 1080))
+ax1 = fig[1, 1] = Axis(fig,
+    aspect = 2,
+    title = "Ski Jumper's Trajectory",
+    titlegap = 10, titlesize = 30,
+    xlabel = "distance", xgridwidth = 2, xticks = LinearTicks(20),
+    ylabel = "height", ygridwidth = 2, yticks = LinearTicks(20)
+)
+
+params_grid = SliderGrid(
+    fig[1,2], 
+    (label = "mass", range=50:1:120, format="{:.2f}", startvalue=70.), 
+    tellheight = false,
+    tellwidth = false
+)
 
 # Flight parameters
 m = 70.0                      # Skier's mass (kg)
@@ -21,7 +36,6 @@ alpha = 30.0 * (pi / 180)     # Angle of attack (radians)
 beta = 9.5 * (pi/180)         # Body to ski angle (radians)
 gamma = 150.0 * (pi/180)       # Hip angle (radians)
 
-
 # Initial conditions
 v = 25.0                     # Jumper's speed (m/s)
 vw = 0                     # Wind speed (m/s) do 3 m/s
@@ -32,9 +46,7 @@ x0 = 0.0                     # Take off x-coordinate
 y0 = 0.0                     # Take off y-coordiante
 
 p1 = (m, rho, A, cd, cl, g, phi, alpha, vw)
-
 u0 = [vx0, vy0, x0, y0]
-
 t_sim = (0.0, 10.0)     # Length of simulation
 
 # Ski jump hill parameters (Courchevel hill in Savoie)
@@ -55,19 +67,7 @@ y_sim1 = []
 
 time = 0:0.1:10
 
-filter_data(time, sol, x_sim, y_sim, params)
 filter_data(time, sol1, x_sim1, y_sim1, params)
-filter_data(time, sol2, x_sim2, y_sim2, params)
-filter_data(time, sol3, x_sim3, y_sim3, params)
-
-fig = Figure(resolution = (1920, 1080))
-ax1 = fig[1, 1] = Axis(fig,
-    aspect = 2,
-    title = "Ski Jumper's Trajectory",
-    titlegap = 10, titlesize = 30,
-    xlabel = "distance", xgridwidth = 2, xticks = LinearTicks(20),
-    ylabel = "height", ygridwidth = 2, yticks = LinearTicks(20)
-)
 
 lines!(ax1, x_sim1, y_sim1, color=:red, label = "angle of attack")
 lines!(ax1, x_h, jump_hill(x_h, params), color=:black)
