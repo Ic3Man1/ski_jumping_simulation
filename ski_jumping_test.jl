@@ -1,104 +1,58 @@
+import Pkg
+
+include("functions.jl")
+
 using DifferentialEquations
 using GLMakie
 
-# Funkcja opisująca układ równań różniczkowych
-function ski_jump!(du, u, p, t)
-    vx, vy, x, y = u  # Rozpakowanie stanu
-    m, ρ, A, cd, cl, g, φ = p  # Rozpakowanie parametrów
-    v = sqrt(vx^2 + vy^2)  # Całkowita prędkość
-
-    # Siły aerodynamiczne
-    Fd = 0.5 * ρ * v^2 * A * cd  # Siła oporu
-    Fl = 0.5 * ρ * v^2 * A * cl  # Siła nośna
-
-    # Równania różniczkowe
-    du[1] = (-Fd * cos(φ) - Fl * sin(φ)) / m  # dvx/dt
-    du[2] = (-Fd * sin(φ) + Fl * cos(φ)) / m - g  # dvy/dt
-    du[3] = vx  # dx/dt
-    du[4] = vy  # dy/dt
-end
-
-# Parametry
-m = 70.0  # Masa skoczka (kg)
-ρ = 1.225  # Gęstość powietrza (kg/m^3)
-A = 0.8  # Powierzchnia czołowa (m^2)
-cd = 0.5  # Współczynnik oporu
-cl = 1.0  # Współczynnik nośności
-g = 9.81  # Przyspieszenie grawitacyjne (m/s^2)
-φ = 10.0 * (pi / 180)  # Kąt nachylenia (radiany)
-
-p = (m, ρ, A, cd, cl, g, φ)  # Parametry przekazane do układu
-
-# Warunki początkowe
-v0 = 25
-vx0 = v0*cos(φ)  # Początkowa prędkość pozioma (m/s)
-vy0 = v0*sin(φ)   # Początkowa prędkość pionowa (m/s)
-x0 = 0.0    # Początkowe położenie w osi x (m)
-y0 = 0.0   # Początkowe położenie w osi y (m)
-
-u0 = [vx0, vy0, x0, y0]  # Początkowe warunki
-
-# Zakres czasu symulacji
-tspan = (0.0, 10.0)  # Od 0 do 10 sekund
-
-# Definicja problemu
-prob = ODEProblem(ski_jump!, u0, tspan, p)
-
-# Rozwiązanie problemu
-sol = solve(prob, Tsit5())
-
-# Wizualizacja wyników
+# Tworzenie figury i wykresów
 fig = Figure(resolution = (1920, 1080))
 ax1 = fig[1, 1] = Axis(fig,
-    # borders
     aspect = 2,
-    # title
     title = "Ski Jumper's Trajectory",
     titlegap = 10, titlesize = 30,
-    # x-axis
-    xlabel = "distance", xgridwidth = 2, xticks = LinearTicks(20),
-    # y-axis
-    ylabel = "height", ygridwidth = 2, yticks = LinearTicks(20)
+    xlabel = "Distance", xgridwidth = 2, xticks = LinearTicks(20),
+    ylabel = "Height", ygridwidth = 2, yticks = LinearTicks(20)
 )
 
-w = 90
-Bp = 35.5  # Kąt w stopniach
-Bo = 5.9   # Kąt w stopniach
-Px = 71.26
-Pz = -38.25
-params = (w, Bp, Bo, Px, Pz)
+params_grid = SliderGrid(
+    fig[1, 2], 
+    (label = "mass", range=50:1:120, format="{:.2f}", startvalue=70.), 
+    tellheight = false,
+    tellwidth = false
+)
 
+# Parametry lotu
+m = Observable(70.0)  # Masa skoczka
+rho = 1.225
+g = 9.81
+phi = 7.0
+alpha = 30.0 * (pi / 180)
+vw = 0.0  # Prędkość wiatru
+u0 = [25.0 * cosd(phi), 25.0 * sind(phi), 0.0, 0.0]
 
-function skocznia(x, params)
-    x_h = x
-    w, Bp, Bo, Px, Pz = params
-    u = -Pz - w/40 - Px * tand(Bo)
-    v = Px * (tand(Bp) - tand(Bo))
-    return z_h = -w/40 .- x_h .* tand(Bo) .- (3*u - v) .* ((x_h ./ Px).^2) .+ (2*u - v) .* ((x_h ./ Px).^3)
+# Parametry skoczni
+hill_params = (90.0, 35.5, 5.9, 71.26, -38.25)
+
+# Obserwowalne parametry i trajektoria
+jumper_params = Observable((m[], rho, g, phi, alpha, vw))
+trajectory = Observable(calculate_trajectory(jumper_params[], hill_params, u0))
+
+# Aktualizacja trajektorii w odpowiedzi na zmianę masy
+on(params_grid.sliders[1].value) do new_mass
+    m[] = new_mass
+    jumper_params[] = (m[], rho, g, phi, alpha, vw)
+    trajectory[] = calculate_trajectory(jumper_params[], hill_params, u0)
+    println("Updated mass: ", m[])
+    println("Updated trajectory: ", trajectory[])
 end
 
-x_vals = []
-y_vals = []
-
-# Gęste próbki czasu dla gładkości
-t_vals = 0:0.1:10  # Gęsta siatka czasu
-
-for t in t_vals
-    println(sol(t)[4], " ", skocznia(t, params))
-    x_skoczek = sol(t)[3]  # Pozioma pozycja skoczka
-    y_skoczek = sol(t)[4]  # Pionowa pozycja skoczka
-    z_skocznia = skocznia(x_skoczek, params)  # Profil skoczni w pozycji x_skoczek
-    if (y_skoczek +1  >= skocznia(x_skoczek, params))
-        push!(x_vals, sol(t)[3])
-        push!(y_vals, sol(t)[4])
-    else
-        break
-    end
+# Rysowanie trajektorii
+plot_trajectory = lift(trajectory) do traj
+    vx_sim, vy_sim, x_sim, y_sim, plot_time = traj
+    empty!(ax1)
+    lines!(ax1, x_sim, y_sim, color=:red)
+    lines!(ax1, 0:0.1:150, jump_hill(0:0.1:150, hill_params), color=:black)
 end
 
-#x_vals = [sol(t)[3] for t in t_vals]  # Położenie x
-#y_vals = [sol(t)[4] for t in t_vals]  # Położenie y
-
-lines!(ax1, x_vals, y_vals, color=:blue, linewidth=2)
-lines!(ax1, x_h, skocznia(x_h, params), color=:black)
 fig
