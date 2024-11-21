@@ -1,4 +1,4 @@
-import Pkg
+#import Pkg
 
 #Pkg.add("GLMakie")
 #Pkg.add("DifferentialEquations")
@@ -46,7 +46,7 @@ params_grid = SliderGrid(
 )
 
 # Flight parameters
-m = Observable(70.0)                     # Skier's mass (kg)
+m = 70.0                     # Skier's mass (kg)
 rho = 1.225                   # Air denity (kg/m^3)
 g = 9.81                      # Acceleration of gravity (m/s^2)
 phi = 7.0                     # Angle of the jump (degrees)
@@ -64,7 +64,6 @@ vy0 = v0*sind(phi)          # Take off speed in y-axis (m/s)
 x0 = 0.0                     # Take off x-coordinate
 y0 = 0.0                     # Take off y-coordiante
 
-t_sim = (0.0, 10.0)     # Length of simulation
 
 # Ski jump hill parameters (Courchevel hill in Savoie)
 w = 90.0        # Distance between the edge of the take off and the K point (meters)
@@ -74,18 +73,18 @@ P_x = 71.26     # P point x coordiante
 P_y = -38.25    # P point y coordiante
 
 x_h = 0:0.1:150
-jumper_params = Observable((m, rho, g, phi, alpha, vw))
 hill_params = (w, beta_p, beta_o, P_x, P_y)
 u0 = [vx0, vy0, x0, y0]
 sim_time = 0:0.1:10
 
-trajectory = Observable(calculate_trajectory((m[], rho, g, phi, alpha, vw), hill_params, u0))
+jumper_params = Observable((m[], rho, g, phi, alpha, vw))
+trajectory = Observable(calculate_trajectory(jumper_params[], hill_params, u0))
 
-#prob = ODEProblem(skiers_flight1, u0, t_sim, p1)
-#sol = solve(prob1, Tsit5())
+on(params_grid.sliders[1].value) do new_mass
+    jumper_params[] = (new_mass, rho, g, phi, alpha, vw)
+    trajectory[] = calculate_trajectory(jumper_params[], hill_params, u0)
+end
 
-#vx_sim, vy_sim, x_sim, y_sim, plot_time = filter_data(sim_time, sol, hill_params)
-#v_sim = sqrt.(vx_sim .^ 2 .+ vy_sim .^ 2)
 plot_trajectory = lift(trajectory) do (vx_sim, vy_sim, x_sim, y_sim, plot_time)
     v_sim = sqrt.(vx_sim .^ 2 .+ vy_sim .^ 2)
     empty!(ax1)
@@ -97,11 +96,6 @@ plot_trajectory = lift(trajectory) do (vx_sim, vy_sim, x_sim, y_sim, plot_time)
     lines!(ax2, plot_time, v_sim, color=:purple)
     lines!(ax3, plot_time, vx_sim, color=:green)
     lines!(ax4, plot_time, vy_sim, color=:blue)
-end
-
-on(params_grid.sliders[1].value) do new_mass
-    m[] = new_mass
-    trajectory[] = calculate_trajectory((m[], rho, g, phi, alpha, vw), hill_params, u0)
 end
 
 fig

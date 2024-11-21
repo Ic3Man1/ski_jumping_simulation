@@ -40,8 +40,7 @@ trajectory = Observable(calculate_trajectory(jumper_params[], hill_params, u0))
 
 # Aktualizacja trajektorii w odpowiedzi na zmianę masy
 on(params_grid.sliders[1].value) do new_mass
-    m[] = new_mass
-    jumper_params[] = (m[], rho, g, phi, alpha, vw)
+    jumper_params[] = (new_mass, rho, g, phi, alpha, vw)
     trajectory[] = calculate_trajectory(jumper_params[], hill_params, u0)
     println("Updated mass: ", m[])
     println("Updated trajectory: ", trajectory[])
