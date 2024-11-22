@@ -58,6 +58,7 @@ function calculate_trajectory(jumper_params, hill_params)  # Calculates jumper's
     t_sim = (0.0, 10.0)
     sim_time = 0:0.1:10
     u0 = calc_params(v, vw, phi)
+    
     prob = ODEProblem(skiers_flight1, u0, t_sim, jumper_params)
     sol = solve(prob, Tsit5())
 

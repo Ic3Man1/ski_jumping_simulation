@@ -73,7 +73,7 @@ hill_params = (w, beta_p, beta_o, P_x, P_y)
 jumper_params = Observable((m, rho, g, phi, alpha, vw, v))
 trajectory = Observable(calculate_trajectory(jumper_params[], hill_params))
 
-for i in 1:5
+for i in 1:6
     on(params_grid.sliders[i].value) do new_val
         if(i == 1)
             println(new_val)
