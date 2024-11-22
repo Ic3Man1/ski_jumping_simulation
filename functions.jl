@@ -1,6 +1,6 @@
 function skiers_flight1(du1, u1, p1, t)  # Model of skier's flight with angle of attack
     vx, vy, x, y = u1
-    m, rho, g, phi, alpha, vw = p1
+    m, rho, g, phi, alpha, vw, v = p1
     v = sqrt(vx^2 + vy^2)
 
     L1 = -0.43903 + 0.60743 * alpha - 7.192 * 10 ^ (-4) * alpha ^ 2
@@ -45,7 +45,7 @@ function filter_data(sim_time, sol, hill_params) # Function for showing simulate
 end
 
 function calc_params(v, vw, phi)
-    v0 = v + vw                  # Take off speed (m/s)
+    v0 = v + vw                # Take off speed (m/s)
     vx0 = v0 * cosd(phi)          # Take off speed in x-axis (m/s)
     vy0 = v0 * sind(phi)          # Take off speed in y-axis (m/s)
     x0 = 0.0                     # Take off x-coordinate

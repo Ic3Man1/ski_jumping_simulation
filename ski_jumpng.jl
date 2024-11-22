@@ -52,25 +52,12 @@ params_grid = SliderGrid(
 
 # Flight parameters
 m = 70.0                      # Skier's mass (kg)
-rho = 1.225                   # Air denity (kg/m^3)
+rho = 0.5                   # Air denity (kg/m^3)
 g = 9.81                      # Acceleration of gravity (m/s^2)
 phi = 7.0                     # Angle of the jump (degrees)
 alpha = 30.0 * (pi / 180)     # Angle of attack (radians)
-v = 25.0                 # Jumper's speed (m/s)
-vw = 0.0               # Wind speed (m/s) do 3 m/s
-
-
-# Initial conditions
-#v = params_grid.sliders[6].value                 # Jumper's speed (m/s)
-#vw = params_grid.sliders[5].value               # Wind speed (m/s) do 3 m/s
-function calc_params(v, vw, phi)
-    #v0 = v + vw                  # Take off speed (m/s)
-    vx0 = v * cosd(phi)          # Take off speed in x-axis (m/s)
-    vy0 = v * sind(phi)          # Take off speed in y-axis (m/s)
-    x0 = 0.0                     # Take off x-coordinate
-    y0 = 0.0                     # Take off y-coordiante
-    return [vx0, vy0, x0, y0]
-end
+v = 25.0                      # Jumper's speed (m/s)
+vw = 0.0                      # Wind speed (m/s) do 3 m/s
 
 # Ski jump hill parameters (Courchevel hill in Savoie)
 w = 90.0        # Distance between the edge of the take off and the K point (meters)
@@ -89,21 +76,27 @@ trajectory = Observable(calculate_trajectory(jumper_params[], hill_params))
 for i in 1:5
     on(params_grid.sliders[i].value) do new_val
         if(i == 1)
+            println(new_val)
             jumper_params[] = (new_val, rho, g, phi, alpha, vw, v)
             trajectory[] = calculate_trajectory(jumper_params[], hill_params)
         elseif (i == 2)
-            jumper_params[] = (m, new_val, g, phi, alpha, vw. v)
+            println(new_val)
+            jumper_params[] = (m, new_val, g, phi, alpha, vw, v)
             trajectory[] = calculate_trajectory(jumper_params[], hill_params)
         elseif (i == 3)
+            println(new_val)
             jumper_params[] = (m, rho, g, new_val, alpha, vw, v)
             trajectory[] = calculate_trajectory(jumper_params[], hill_params)
         elseif (i == 4)
+            println(new_val)
             jumper_params[] = (m, rho, g, phi, new_val * (pi / 180) , vw, v)
             trajectory[] = calculate_trajectory(jumper_params[], hill_params)
         elseif (i == 5)
+            println(new_val)
             jumper_params[] = (m, rho, g, phi, alpha, new_val, v)
             trajectory[] = calculate_trajectory(jumper_params[], hill_params)
         elseif (i == 6)
+            println(new_val)
             jumper_params[] = (m, rho, g, phi, alpha, vw, new_val)
             trajectory[] = calculate_trajectory(jumper_params[], hill_params)
         end
