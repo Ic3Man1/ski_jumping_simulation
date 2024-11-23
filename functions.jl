@@ -1,20 +1,6 @@
-function skiers_flight(du, u, p, t)  # Model of skier's flight
-    vx, vy, x, y = u
-    m, rho, A, cd, cl, g, phi = p
-    v = sqrt(vx^2 + vy^2)
-
-    Fd = 0.5 * rho * v^2 * A * cd
-    Fl = 0.5 * rho * v^2 * A * cl
-
-    du[1] = (-Fd * cosd(phi) - Fl * sind(phi)) / m
-    du[2] = (-Fd * sind(phi) + Fl * cosd(phi)) / m - g
-    du[3] = vx
-    du[4] = vy
-end
-
 function skiers_flight1(du1, u1, p1, t)  # Model of skier's flight with angle of attack
     vx, vy, x, y = u1
-    m, rho, A, cd, cl, g, phi, alpha, vw = p1
+    m, rho, g, phi, alpha, vw, v = p1
     v = sqrt(vx^2 + vy^2)
 
     L1 = -0.43903 + 0.60743 * alpha - 7.192 * 10 ^ (-4) * alpha ^ 2
@@ -24,64 +10,9 @@ function skiers_flight1(du1, u1, p1, t)  # Model of skier's flight with angle of
     Fl = 0.5 * rho * v^2 * D1  # Lift force
 
     du1[1] = ((-Fd * cosd(phi) - Fl * sind(phi)) / m) * (v / (v-vw))
-    du1[2] = ((-Fd * sind(phi) + Fl * cosd(phi)) / m - g) * (v / (v-vw))
+    du1[2] = ((Fd * sind(phi) + Fl * cosd(phi)) / m - g) * (v / (v-vw))
     du1[3] = vx
     du1[4] = vy
-end
-
-function skiers_flight2(du2, u2, p2, t)  # Model of skier's flight with angle of attack
-    vx, vy, x, y = u2
-    m, rho, A, cd, cl, g, phi, alpha, beta = p2
-    v = sqrt(vx^2 + vy^2)
-
-    L1 = -0.43903 + 0.60743 * alpha - 7.192 * 10 ^ (-4) * alpha ^ 2
-    D1 = -0.032061 + 0.1232 * alpha + 2.283 * 10 ^ (-4) * alpha ^ 2
-
-    L2 =  0.75037 + 8.86746 * 10 ^ (-3) * beta - 2.99665 * 10 ^ (-4) * beta ^ 2
-    D2 = 0.578995 + 0.01201 * beta + 2.91724 * 10 ^ (-5) * beta ^ 2
-
-    L2_2 = -0.645718 + 0.0126185 * beta - 3.348 * 10 ^ (-4) * beta ^ 2
-    D2_2 = 0.408434 + 0.01364 *  beta + 3.9308 * 10 ^ (-5) * beta ^ 2
-
-    L = L1 * ((L2 + L2_2) / 2) 
-    D = D1 * ((D2 + D2_2) / 2)
-    
-    Fd = 0.5 * rho * v^2 * L  # Drag force
-    Fl = 0.5 * rho * v^2 * D  # Lift force
-
-    du2[1] = (-Fd * cosd(phi) - Fl * sind(phi)) / m
-    du2[2] = (-Fd * sind(phi) + Fl * cosd(phi)) / m - g
-    du2[3] = vx
-    du2[4] = vy
-end
-
-function skiers_flight3(du3, u3, p3, t)  # Model of skier's flight with angle of attack
-    vx, vy, x, y = u3
-    m, rho, A, cd, cl, g, phi, alpha, beta, gamma = p3
-    v = sqrt(vx^2 + vy^2)
-
-    L1 = -0.43903 + 0.60743 * alpha - 7.192 * 10 ^ (-4) * alpha ^ 2
-    D1 = -0.032061 + 0.1232 * alpha + 2.283 * 10 ^ (-4) * alpha ^ 2
-
-    L2 =  0.75037 + 8.86746 * 10 ^ (-3) * beta - 2.99665 * 10 ^ (-4) * beta ^ 2
-    D2 = 0.578995 + 0.01201 * beta + 2.91724 * 10 ^ (-5) * beta ^ 2
-
-    L2_2 = -0.645718 + 0.0126185 * beta - 3.348 * 10 ^ (-4) * beta ^ 2
-    D2_2 = 0.408434 + 0.01364 *  beta + 3.9308 * 10 ^ (-5) * beta ^ 2
-
-    L3 = -2.442 + 0.04035 * gamma - 1.25 * 10 ^ (-4) * gamma ^ 2
-    D3 = 1.722 - 0.01365 * gamma + 4.5 * 10 ^ (-5)
-
-    L = L1 * ((L2 + L2_2) / 2) * L3
-    D = D1 * ((D2 + D2_2) / 2) * D3
-    
-    Fd = 0.5 * rho * v^2 * L * 10  # Drag force
-    Fl = 0.5 * rho * v^2 * D * 10  # Lift force
-
-    du3[1] = (-Fd * cosd(phi) - Fl * sind(phi)) / m
-    du3[2] = (-Fd * sind(phi) + Fl * cosd(phi)) / m - g
-    du3[3] = vx
-    du3[4] = vy
 end
 
 function jump_hill(x, params) # Model of ski jump hill
@@ -92,17 +23,85 @@ function jump_hill(x, params) # Model of ski jump hill
     return y_h = -w/40 .- x_h .* tand(beta_o) .- (3*u - v) .* ((x_h ./ P_x).^2) .+ (2*u - v) .* ((x_h ./ P_x).^3)
 end
 
-function filter_data(time, sol, x_sim, y_sim, params)
-    for t in time  # Loop for showing simulated trajectory to the moment of jumper's landing
+function filter_data(sim_time, sol, hill_params) # Function for showing simulated trajectory to the moment of jumper's landing
+    vdistance, vy_sim, distance, y_sim, plot_time = [], [], [], [], []
+    for t in sim_time  
         x_jumper = sol(t)[3]
         y_jumper = sol(t)[4]
-        y_hill = jump_hill(x_jumper, params)
+        y_hill = jump_hill(x_jumper, hill_params)
 
         if(y_jumper + 1 > y_hill)
-            push!(x_sim, sol(t)[3])
+            push!(vdistance, sol(t)[1])
+            push!(vy_sim, sol(t)[2])
+            push!(distance, sol(t)[3])
             push!(y_sim, sol(t)[4])
+            push!(plot_time, t)
         else
+            return vdistance, vy_sim, distance, y_sim, plot_time
             break
         end
     end
+    return vdistance, vy_sim, distance, y_sim, plot_time
+end
+
+function calculate_params(v, vw, phi)  # Calculates inital speed and coordinates of the jumper
+    v0 = v + vw                 # Take off speed (m/s)
+    vx0 = v0 * cosd(phi)        # Take off speed in x-axis (m/s)
+    vy0 = v0 * sind(phi)        # Take off speed in y-axis (m/s)
+    x0 = 0.0                    # Take off x-coordinate
+    y0 = 0.0                    # Take off y-coordiante
+    return [vx0, vy0, x0, y0]
+end
+
+function calculate_trajectory(jumper_params, hill_params)  # Calculates jumper's trajectory based on non-linear differential equations
+    m, rho, g, phi, alpha, vw, v = jumper_params
+    t_sim = (0.0, 10.0)
+    sim_time = 0:0.1:10
+    u0 = calculate_params(v, vw, phi)
+    
+    prob = ODEProblem(skiers_flight1, u0, t_sim, jumper_params)
+    sol = solve(prob, Tsit5())
+
+    return filter_data(sim_time, sol, hill_params)
+end
+
+function calculate_smove(vsw, rot, jumper_params, plot_time, distance) # Calculates how much jumper will move to the side during the flight
+    m, rho, g, phi, alpha, vw, v = jumper_params
+    z_sim = []
+    for t in plot_time
+        z = (0.5 * rho * 0.59 * (0.356 + 0.7*sind(rot)) * (vsw ^ 2) * (t ^ 2)) / m
+        if (vsw < 0)
+            z = -z
+        end
+        z = z + 0.001 * distance[Int(t * 10 + 1)]* sind(rot)
+        push!(z_sim, z)
+    end
+    return z_sim
+end
+
+function update_params(i, jumper_params, new_val) # Changing values on the sliders
+    m, rho, g, phi, alpha, vw, v = jumper_params
+    vsw = 0
+    if(i == 1)
+        jumper_params = (new_val, rho, g, phi, alpha, vw, v)
+    elseif (i == 2)
+        jumper_params = (m, new_val, g, phi, alpha, vw, v)
+    elseif (i == 3)
+        jumper_params = (m, rho, g, new_val, alpha, vw, v)
+    elseif (i == 4)
+        jumper_params = (m, rho, g, phi, new_val * (pi / 180) , vw, v)
+    elseif (i == 5)
+        jumper_params = (m, rho, g, phi, alpha, new_val, v)
+    elseif (i == 6)
+        jumper_params = (m, rho, g, phi, alpha, vw, new_val)
+    end
+    return jumper_params
+end
+
+function process_data(vx_sim, vy_sim, x_sim, plot_time, vsw, rot, jumper_params)
+    v_sim = sqrt.(vx_sim .^ 2 .+ vy_sim .^ 2)
+    z_sim = calculate_smove(vsw[], rot[], jumper_params[], plot_time, x_sim)
+    x_sim = sqrt.(x_sim .^ 2 - z_sim .^ 2)
+    println("Distance: ", round(last(x_sim), digits=2), " meters")
+    return v_sim, z_sim, x_sim
 end
