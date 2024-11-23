@@ -3,14 +3,14 @@ function make_fig(y_res, x_res)
 end
 
 function make_ax()
-    ax1 = fig[1, 1] = Axis(fig,
+    ax1 = fig[1, 1:2] = Axis(fig,
     aspect = 2,
     title = "Ski Jumper's Trajectory",
     titlegap = 10, titlesize = 30,
     xlabel = "Distance [m]", xgridwidth = 2, xticks = LinearTicks(20),
     ylabel = "Height [m]", ygridwidth = 2, yticks = LinearTicks(20)
     )
-    ax2 = fig[1, 2] = Axis(fig,
+    ax2 = fig[2, 2] = Axis(fig,
         aspect = 2, limits = (-9, 9, -75, 2),
         title = "Ski Jumper's Side Trajectory",
         titlegap = 10, titlesize = 30,
@@ -24,14 +24,14 @@ function make_ax()
         xlabel = "Time [s]", xgridwidth = 2, xticks = LinearTicks(20),
         ylabel = "Speed [ms/s]", ygridwidth = 2, yticks = LinearTicks(20)
     )
-    ax4 = fig[2, 2] = Axis(fig,
+    #=ax4 = fig[2, 2] = Axis(fig,
         aspect = 2, limits = (0, 4.5, 16, 33),
         title = "Ski Jumper's x-axis velocity",
         titlegap = 10, titlesize = 30,
         xlabel = "Time [s]", xgridwidth = 2, xticks = LinearTicks(20),
         ylabel = "Speed [m/s]", ygridwidth = 2, yticks = LinearTicks(20)
-    )
-    return ax1, ax2, ax3, ax4
+    )=#
+    return ax1, ax2, ax3
 end
 
 function make_sliders()

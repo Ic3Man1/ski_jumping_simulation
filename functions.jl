@@ -10,7 +10,7 @@ function skiers_flight1(du1, u1, p1, t)  # Model of skier's flight with angle of
     Fl = 0.5 * rho * v^2 * D1  # Lift force
 
     du1[1] = ((-Fd * cosd(phi) - Fl * sind(phi)) / m) * (v / (v-vw))
-    du1[2] = ((-Fd * sind(phi) - Fl * cosd(phi)) / m - g) * (v / (v-vw))
+    du1[2] = ((Fd * sind(phi) + Fl * cosd(phi)) / m - g) * (v / (v-vw))
     du1[3] = vx
     du1[4] = vy
 end
@@ -65,7 +65,7 @@ function calculate_trajectory(jumper_params, hill_params)  # Calculates jumper's
     return filter_data(sim_time, sol, hill_params)
 end
 
-function calculate_swind(vsw, rot, jumper_params, plot_time, distance)
+function calculate_smove(vsw, rot, jumper_params, plot_time, distance) # Calculates how much jumper will move to the side during the flight
     m, rho, g, phi, alpha, vw, v = jumper_params
     z_sim = []
     for t in plot_time
@@ -73,13 +73,13 @@ function calculate_swind(vsw, rot, jumper_params, plot_time, distance)
         if (vsw < 0)
             z = -z
         end
-        #z = z + distance[Int(t * 10 + 1)]/100 * sind(rot)
+        z = z + 0.001 * distance[Int(t * 10 + 1)]* sind(rot)
         push!(z_sim, z)
     end
     return z_sim
 end
 
-function update_params(i, jumper_params, new_val)
+function update_params(i, jumper_params, new_val) # Changing values on the sliders
     m, rho, g, phi, alpha, vw, v = jumper_params
     vsw = 0
     if(i == 1)
@@ -98,6 +98,10 @@ function update_params(i, jumper_params, new_val)
     return jumper_params
 end
 
-function process_data()
-    
+function process_data(vx_sim, vy_sim, x_sim, plot_time, vsw, rot, jumper_params)
+    v_sim = sqrt.(vx_sim .^ 2 .+ vy_sim .^ 2)
+    z_sim = calculate_smove(vsw[], rot[], jumper_params[], plot_time, x_sim)
+    x_sim = sqrt.(x_sim .^ 2 - z_sim .^ 2)
+    println("Distance: ", round(last(x_sim), digits=2), " meters")
+    return v_sim, z_sim, x_sim
 end
