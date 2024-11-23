@@ -9,8 +9,8 @@ function skiers_flight1(du1, u1, p1, t)  # Model of skier's flight with angle of
     Fd = 0.5 * rho * v^2 * L1  # Drag force
     Fl = 0.5 * rho * v^2 * D1  # Lift force
 
-    du1[1] = ((Fd * cosd(phi) + Fl * sind(phi)) / m) * (v / (v-vw))
-    du1[2] = ((Fd * sind(phi) + Fl * cosd(phi)) / m - g) * (v / (v-vw))
+    du1[1] = ((-Fd * cosd(phi) - Fl * sind(phi)) / m) * (v / (v-vw))
+    du1[2] = ((-Fd * sind(phi) - Fl * cosd(phi)) / m - g) * (v / (v-vw))
     du1[3] = vx
     du1[4] = vy
 end
@@ -24,24 +24,24 @@ function jump_hill(x, params) # Model of ski jump hill
 end
 
 function filter_data(sim_time, sol, hill_params) # Function for showing simulated trajectory to the moment of jumper's landing
-    vx_sim, vy_sim, x_sim, y_sim, plot_time = [], [], [], [], []
+    vdistance, vy_sim, distance, y_sim, plot_time = [], [], [], [], []
     for t in sim_time  
         x_jumper = sol(t)[3]
         y_jumper = sol(t)[4]
         y_hill = jump_hill(x_jumper, hill_params)
 
         if(y_jumper + 1 > y_hill)
-            push!(vx_sim, sol(t)[1])
+            push!(vdistance, sol(t)[1])
             push!(vy_sim, sol(t)[2])
-            push!(x_sim, sol(t)[3])
+            push!(distance, sol(t)[3])
             push!(y_sim, sol(t)[4])
             push!(plot_time, t)
         else
-            return vx_sim, vy_sim, x_sim, y_sim, plot_time
+            return vdistance, vy_sim, distance, y_sim, plot_time
             break
         end
     end
-    return vx_sim, vy_sim, x_sim, y_sim, plot_time
+    return vdistance, vy_sim, distance, y_sim, plot_time
 end
 
 function calculate_params(v, vw, phi)  # Calculates inital speed and coordinates of the jumper
@@ -65,22 +65,23 @@ function calculate_trajectory(jumper_params, hill_params)  # Calculates jumper's
     return filter_data(sim_time, sol, hill_params)
 end
 
-function calculate_swind(vsw, jumper_params)
-    plot_time = 0:0.1:5
+function calculate_swind(vsw, rot, jumper_params, plot_time, distance)
     m, rho, g, phi, alpha, vw, v = jumper_params
     z_sim = []
     for t in plot_time
-        z = (0.5 * rho * 0.59 * 0.356 * (vsw ^ 2) * (t ^ 2)) / m
+        z = (0.5 * rho * 0.59 * (0.356 + 0.7*sind(rot)) * (vsw ^ 2) * (t ^ 2)) / m
+        if (vsw < 0)
+            z = -z
+        end
+        #z = z + distance[Int(t * 10 + 1)]/100 * sind(rot)
         push!(z_sim, z)
-    end
-    if (vsw < 0)
-        z_sim = z_sim .* (-1)
     end
     return z_sim
 end
 
 function update_params(i, jumper_params, new_val)
     m, rho, g, phi, alpha, vw, v = jumper_params
+    vsw = 0
     if(i == 1)
         jumper_params = (new_val, rho, g, phi, alpha, vw, v)
     elseif (i == 2)
@@ -95,4 +96,8 @@ function update_params(i, jumper_params, new_val)
         jumper_params = (m, rho, g, phi, alpha, vw, new_val)
     end
     return jumper_params
+end
+
+function process_data()
+    
 end
