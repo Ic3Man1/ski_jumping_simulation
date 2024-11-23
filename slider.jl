@@ -26,7 +26,7 @@ lsgrid = SliderGrid(
     tellwidth = false
 )
 
-sl_sublayout = GridLayout(height = 150)
+sl_sublayout = GridLayout(height = 800)
 fig[1, 2] = sl_sublayout
 fig[1, 2] = lsgrid.layout
 

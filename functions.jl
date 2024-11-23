@@ -9,8 +9,8 @@ function skiers_flight1(du1, u1, p1, t)  # Model of skier's flight with angle of
     Fd = 0.5 * rho * v^2 * L1  # Drag force
     Fl = 0.5 * rho * v^2 * D1  # Lift force
 
-    du1[1] = ((-Fd * cosd(phi) - Fl * sind(phi)) / m) * (v / (v-vw))
-    du1[2] = ((-Fd * sind(phi) - Fl * cosd(phi)) / m - g) * (v / (v-vw))
+    du1[1] = ((Fd * cosd(phi) + Fl * sind(phi)) / m) * (v / (v-vw))
+    du1[2] = ((Fd * sind(phi) + Fl * cosd(phi)) / m - g) * (v / (v-vw))
     du1[3] = vx
     du1[4] = vy
 end
@@ -44,12 +44,12 @@ function filter_data(sim_time, sol, hill_params) # Function for showing simulate
     return vx_sim, vy_sim, x_sim, y_sim, plot_time
 end
 
-function calc_params(v, vw, phi)
-    v0 = v + vw                # Take off speed (m/s)
-    vx0 = v0 * cosd(phi)          # Take off speed in x-axis (m/s)
-    vy0 = v0 * sind(phi)          # Take off speed in y-axis (m/s)
-    x0 = 0.0                     # Take off x-coordinate
-    y0 = 0.0                     # Take off y-coordiante
+function calculate_params(v, vw, phi)  # Calculates inital speed and coordinates of the jumper
+    v0 = v + vw                 # Take off speed (m/s)
+    vx0 = v0 * cosd(phi)        # Take off speed in x-axis (m/s)
+    vy0 = v0 * sind(phi)        # Take off speed in y-axis (m/s)
+    x0 = 0.0                    # Take off x-coordinate
+    y0 = 0.0                    # Take off y-coordiante
     return [vx0, vy0, x0, y0]
 end
 
@@ -57,10 +57,42 @@ function calculate_trajectory(jumper_params, hill_params)  # Calculates jumper's
     m, rho, g, phi, alpha, vw, v = jumper_params
     t_sim = (0.0, 10.0)
     sim_time = 0:0.1:10
-    u0 = calc_params(v, vw, phi)
+    u0 = calculate_params(v, vw, phi)
     
     prob = ODEProblem(skiers_flight1, u0, t_sim, jumper_params)
     sol = solve(prob, Tsit5())
 
     return filter_data(sim_time, sol, hill_params)
+end
+
+function calculate_swind(vsw, jumper_params)
+    plot_time = 0:0.1:5
+    m, rho, g, phi, alpha, vw, v = jumper_params
+    z_sim = []
+    for t in plot_time
+        z = (0.5 * rho * 0.59 * 0.356 * (vsw ^ 2) * (t ^ 2)) / m
+        push!(z_sim, z)
+    end
+    if (vsw < 0)
+        z_sim = z_sim .* (-1)
+    end
+    return z_sim
+end
+
+function update_params(i, jumper_params, new_val)
+    m, rho, g, phi, alpha, vw, v = jumper_params
+    if(i == 1)
+        jumper_params = (new_val, rho, g, phi, alpha, vw, v)
+    elseif (i == 2)
+        jumper_params = (m, new_val, g, phi, alpha, vw, v)
+    elseif (i == 3)
+        jumper_params = (m, rho, g, new_val, alpha, vw, v)
+    elseif (i == 4)
+        jumper_params = (m, rho, g, phi, new_val * (pi / 180) , vw, v)
+    elseif (i == 5)
+        jumper_params = (m, rho, g, phi, alpha, new_val, v)
+    elseif (i == 6)
+        jumper_params = (m, rho, g, phi, alpha, vw, new_val)
+    end
+    return jumper_params
 end
